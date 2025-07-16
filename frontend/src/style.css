@@ -1,0 +1,110 @@
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light;
+  color: #303133;
+  background-color: #ffffff;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: visible !important;
+}
+
+/* 美化滚动条 */
+::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+  display: block !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #c0c4cc;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #909399;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #f5f7fa;
+}
+
+* {
+  scrollbar-width: auto !important;
+  scrollbar-color: #c0c4cc #f5f7fa;
+}
+
+a {
+  font-weight: 500;
+  color: #409EFF;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #66b1ff;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-width: 100vw;
+  min-height: 100vh;
+  overflow: visible !important;
+}
+
+#app {
+  width: 100vw;
+  height: 100vh;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  overflow: visible !important;
+}
+
+h1 {
+  font-size: 2.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 4px;
+  border: 1px solid #dcdfe6;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #f5f7fa;
+  color: #606266;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+
+button:hover {
+  border-color: #c6e2ff;
+  color: #409EFF;
+  background-color: #ecf5ff;
+}
+
+/* 移除深色模式 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: #303133;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #66b1ff;
+  }
+  button {
+    background-color: #f5f7fa;
+  }
+}

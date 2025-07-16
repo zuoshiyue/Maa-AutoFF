@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="format-detection" content="telephone=no" />
+    <title>FF14助手工具</title>
+    <script>
+      // 监听pywebview ready事件
+      window.addEventListener('pywebviewready', function() {
+        console.log('pywebview已就绪，API可以使用了');
+        // 触发自定义事件，让Vue组件知道pywebview已就绪
+        window.dispatchEvent(new Event('pywebview-ready'));
+      });
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
