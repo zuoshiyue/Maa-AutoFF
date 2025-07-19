@@ -275,8 +275,6 @@ class MouseController(Touch):
 
     def __del__(self):
         """清理资源"""
-        print(self.nemu)
-        print("清理资源")
         if self.emulator_type == 'mumu':
             self.nemu.disconnect(self.handle)
         else:  # maa
