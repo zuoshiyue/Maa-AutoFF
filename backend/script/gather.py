@@ -373,9 +373,9 @@ class Gather:
         result = MultiMatch(self.cap.screencap(), [self.imgs['切换攻击'], self.imgs['关闭按钮'], self.imgs['采矿工'], self.imgs['园艺工']])
         if result.切换攻击:
             if (result.采矿工 and job == '采矿工') or (result.园艺工 and job == '园艺工'):
-                self.logs.debug(f'当前职业为{job}，无需切换')
+                self.logs.info(f'当前职业为{job}，无需切换')
                 return
-            self.logs.debug(f'开始切换职业为{job}')
+            self.logs.info(f'开始切换职业为{job}')
             self.auto_stuck_out('移动取消采集')
             self.mouse.click(463,668,0.8)  # 点击切换职业
             self.mouse.click(1139,669,0.8)  # 点击生产职业

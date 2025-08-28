@@ -4,14 +4,18 @@
 """
 import logging
 import os
+import platform
 from backend.global_var import paras
 from backend.emulators.Get_emulators_list import Get_emulators_list
 from backend.emulators.MuMuCap import MuMuCap
 from backend.emulators.Mouse import MouseController
 from backend.img_api.Ocr import Ocr
 from backend.emulators.Keyboard import Keyboard
-import win32gui
 import time
+
+# 导入平台特定的库
+if platform.system() == 'Windows':
+    import win32gui
 
 class EmulatorConnect:
     """模拟器连接类，提供模拟器连接相关功能"""
@@ -105,13 +109,40 @@ class EmulatorConnect:
             # 加载模拟器api
             paras.emulator_api['cap'] = MuMuCap(target_emulator['编号'], paras.sys_settings['mumuPath'])
             paras.emulator_api['cap'].set_fps(paras.sys_settings['screenshot_fps'])
-            paras.emulator_api['mouse'] = MouseController(
-                emulator_type='mumu',
-                emulator_install_path=paras.sys_settings['mumuPath'],
-                instance_index=paras.emulator_info['index']
-                
-            )
-            paras.emulator_api['keyboard'] = Keyboard(win32gui.FindWindow(None, paras.emulator_info['name']))
+            
+            # 根据操作系统初始化鼠标控制器
+            if platform.system() == 'Windows':
+                # Windows平台使用mumu模式
+                paras.emulator_api['mouse'] = MouseController(
+                    emulator_type='mumu',
+                    emulator_install_path=paras.sys_settings['mumuPath'],
+                    instance_index=paras.emulator_info['index']
+                )
+            else:
+                # 非Windows平台使用maa模式（通过ADB控制）
+                paras.emulator_api['mouse'] = MouseController(
+                    emulator_type='maa',
+                    mumupath=paras.sys_settings['mumuPath'],
+                    serial=paras.emulator_info['adb_port'],
+                    adb_path=adb_path  # 传递之前获取的ADB路径
+                )
+            
+            # 根据操作系统初始化键盘控制器
+            if platform.system() == 'Windows':
+                # Windows平台使用窗口句柄
+                window_handle = win32gui.FindWindow(None, paras.emulator_info['name'])
+                paras.emulator_api['keyboard'] = Keyboard(window_handle)
+            else:
+                # Mac平台使用ADB设备序列号
+                # 获取ADB路径（从Get_emulators_list类中可以找到）
+                emulators = Get_emulators_list(paras.sys_settings['mumuPath'])
+                adb_path = emulators.adb_path
+                # 使用ADB设备序列号初始化键盘控制器
+                paras.emulator_api['keyboard'] = Keyboard(
+                    serial=paras.emulator_info['adb_port'],
+                    adb_path=adb_path
+                )
+            
             paras.emulator_api['ocr'] = Ocr()
             
             
@@ -127,4 +158,4 @@ class EmulatorConnect:
             return {
                 'status': False,
                 'message': f'连接模拟器失败: {str(e)}'
-            } 
+            }

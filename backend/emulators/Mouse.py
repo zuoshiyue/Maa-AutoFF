@@ -1,9 +1,11 @@
 import ctypes
 import subprocess
 import time
+import ctypes
 from typing import List, Tuple
 from abc import ABC, abstractmethod
 import os
+import platform
 
 
 class Touch(ABC):
@@ -153,9 +155,15 @@ class MouseController(Touch):
         self.display_id = display_id
         self.instance_index = instance_index
         self.emulator_install_path = emulator_install_path
-        self.dll_path = os.path.join(self.emulator_install_path, "shell/sdk/external_renderer_ipc.dll")
-        if not os.path.exists(self.dll_path):
-            self.dll_path = os.path.join(self.emulator_install_path, "nx_main/sdk/external_renderer_ipc.dll")
+        # 根据操作系统选择正确的DLL/SO文件
+        if platform.system() == 'Windows':
+            self.dll_path = os.path.join(self.emulator_install_path, "shell/sdk/external_renderer_ipc.dll")
+            if not os.path.exists(self.dll_path):
+                self.dll_path = os.path.join(self.emulator_install_path, "nx_main/sdk/external_renderer_ipc.dll")
+        elif platform.system() == 'Darwin':  # macOS
+            self.dll_path = os.path.join(self.emulator_install_path, "shell/sdk/libexternal_renderer_ipc.dylib")
+            if not os.path.exists(self.dll_path):
+                self.dll_path = os.path.join(self.emulator_install_path, "libexternal_renderer_ipc.dylib")
         if not os.path.exists(self.dll_path):
             print(f"无法找到DLL文件: {self.dll_path}")
 
@@ -166,14 +174,59 @@ class MouseController(Touch):
         self.handle = self.nemu.connect(self.emulator_install_path, self.instance_index)
         self._get_display_info()
 
-    def _init_maa(self, mumupath: str, serial: str):
+    def _init_maa(self, mumupath: str, serial: str, adb_path=None):
         """初始化MaaTouch模拟器"""
         self.mumupath = mumupath
         self.serial = serial
-        self.adb_path = mumupath + r'/shell/adb.exe'
+        
+        # 根据操作系统设置ADB路径
+        if adb_path and os.path.exists(adb_path):
+            # 使用传入的ADB路径（优先级最高）
+            self.adb_path = adb_path
+        else:
+            # 尝试从模拟器路径中查找ADB
+            system = platform.system()
+            if system == 'Windows':
+                self.adb_path = os.path.join(mumupath, 'shell', 'adb.exe')
+                if not os.path.exists(self.adb_path):
+                    self.adb_path = os.path.join(mumupath, 'nx_main', 'adb.exe')
+            elif system == 'Darwin':  # macOS
+                self.adb_path = os.path.join(mumupath, 'shell', 'adb')
+                if not os.path.exists(self.adb_path):
+                    # 尝试在Mac应用包内查找
+                    possible_paths = [
+                        os.path.join(mumupath, 'Contents', 'Resources', 'shell', 'adb'),
+                        os.path.join(mumupath, 'vms', 'adb'),
+                        os.path.join(mumupath, 'adb')
+                    ]
+                    for path in possible_paths:
+                        if os.path.exists(path):
+                            self.adb_path = path
+                            break
+            else:
+                # Linux系统
+                self.adb_path = os.path.join(mumupath, 'shell', 'adb')
+                if not os.path.exists(self.adb_path):
+                    self.adb_path = os.path.join(mumupath, 'nx_main', 'adb')
+        
+        # 如果仍然没有找到ADB，使用系统PATH中的ADB
         if not os.path.exists(self.adb_path):
-            self.adb_path = mumupath + r'/nx_main/adb.exe'
-        self.maatouch_path = mumupath + r'/bin/maatouch'
+            print(f"警告：未找到ADB，将使用系统PATH中的adb命令")
+            self.adb_path = 'adb'  # 假设系统PATH中存在adb
+        
+        # 设置maatouch路径
+        self.maatouch_path = os.path.join(mumupath, 'bin', 'maatouch')
+        if not os.path.exists(self.maatouch_path):
+            # 尝试在其他位置查找maatouch
+            possible_paths = [
+                os.path.join(mumupath, 'shell', 'maatouch'),
+                os.path.join(mumupath, 'nx_main', 'maatouch')
+            ]
+            for path in possible_paths:
+                if os.path.exists(path):
+                    self.maatouch_path = path
+                    break
+        
         self.remote_path = "/data/local/tmp/maatouch"
         
         self._init_device()
@@ -194,9 +247,14 @@ class MouseController(Touch):
 
     def _init_device(self):
         """初始化MaaTouch设备"""
+        # 根据操作系统设置进程创建标志
+        process_creation_flags = 0
+        if platform.system() == 'Windows':
+            process_creation_flags = subprocess.CREATE_NO_WINDOW
+        
         subprocess.run(
             [self.adb_path, '-s', self.serial, 'push', self.maatouch_path, self.remote_path],
-            creationflags=subprocess.CREATE_NO_WINDOW
+            creationflags=process_creation_flags
         )
         
         self.process = subprocess.Popen(
@@ -205,7 +263,7 @@ class MouseController(Touch):
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            creationflags=subprocess.CREATE_NO_WINDOW
+            creationflags=process_creation_flags
         )
         
         self._maatouch_stream = self.process.stdin
@@ -283,12 +341,21 @@ class MouseController(Touch):
 
 
 if __name__ == "__main__":
-    # MuMu示例
-    mumu = MouseController('mumu', emulator_install_path=r'L:\MuMuPlayer-12.0', instance_index=0)
-    mumu.click(1000, 650, 100)
-    mumu.swipe([(200, 570), (220, 570), (220, 570)], 2000)
+    # 根据操作系统选择测试路径
+    if platform.system() == 'Windows':
+        # Windows示例
+        print("运行Windows示例")
+        mumu = MouseController('mumu', emulator_install_path=r'L:\MuMuPlayer-12.0', instance_index=0)
+        mumu.click(1000, 650, 100)
+        mumu.swipe([(200, 570), (220, 570), (220, 570)], 2000)
 
-    # MaaTouch示例
-    maa = MouseController('maa', mumupath=r'L:\MuMuPlayer-12.0', serial="192.168.31.174:5555")
-    maa.click(1000, 650, 100)
-    maa.swipe([(200, 570), (220, 570), (220, 570)], 2000)
+        # MaaTouch示例
+        maa = MouseController('maa', mumupath=r'L:\MuMuPlayer-12.0', serial="192.168.31.174:5555")
+        maa.click(1000, 650, 100)
+        maa.swipe([(200, 570), (220, 570), (220, 570)], 2000)
+    elif platform.system() == 'Darwin':
+        # macOS示例
+        print("运行macOS示例")
+        # 需要确保模拟器路径和序列号正确
+        # mumu = MouseController('mumu', emulator_install_path='/Applications/MuMuPlayer-12.app/Contents/MacOS', instance_index=0)
+        # maa = MouseController('maa', mumupath='/Applications/MuMuPlayer-12.app/Contents/MacOS', serial="127.0.0.1:16384")
