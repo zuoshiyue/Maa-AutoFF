@@ -87,7 +87,9 @@ class Gather:
             if value['need'] > value['complete']:
                 self.paras['gather_name'] = key
                 self.logs.debug(f'更新当前采集物品为【{self.paras["gather_name"]}】')
-                self.switch_job(gather_info[self.paras['gather_name']]['job'])
+                target_job = gather_info[self.paras['gather_name']]['job']
+                self.logs.debug(f'根据采集物品{self.paras["gather_name"]}，需要切换到职业{target_job}')
+                self.switch_job(target_job)
                 return
         self.tips.success("采集列表已全部完成")
         self.time_sleep(10)
@@ -119,9 +121,14 @@ class Gather:
         # 寻路
         elif result.寻路按钮:
             self.logs.debug(f'点击寻路按钮')
-            if SingleMatch(self.cap.screencap(), self.imgs['切换职业']):    # 可能可以删了？
-                self.logs.debug(f'寻路前需要切换职业')
-                self.mouse.click(780,470, 1) # 切换职业
+            if SingleMatch(self.cap.screencap(), self.imgs['切换职业']):
+                    current_job = gather_info[self.paras['gather_name']]['job']
+                    self.logs.debug(f'寻路前检测到需要切换职业，当前目标职业为{current_job}')
+                    self.mouse.click(780,470, 1) # 点击切换职业按钮
+                    self.time_sleep(1)
+                    # 再次确认是否需要切换职业
+                    if SingleMatch(self.cap.screencap(), self.imgs['切换职业']):
+                        self.logs.warning(f'点击切换职业按钮后，仍然检测到切换职业提示，可能切换失败')
             self.mouse.click(result.寻路按钮.rect[0]+8, result.寻路按钮.rect[1]+8, 3) # 寻路
             # 判断寻路结束
             t_begin = time.time()
@@ -370,23 +377,55 @@ class Gather:
 
     # 切换职业
     def switch_job(self, job):
+        self.logs.debug(f'进入切换职业方法，目标职业: {job}')
         result = MultiMatch(self.cap.screencap(), [self.imgs['切换攻击'], self.imgs['关闭按钮'], self.imgs['采矿工'], self.imgs['园艺工']])
+        
+        # 记录当前界面状态
+        current_profession = None
+        if result.采矿工:
+            current_profession = '采矿工'
+        elif result.园艺工:
+            current_profession = '园艺工'
+        self.logs.debug(f'当前界面检测结果 - 切换攻击按钮: {bool(result.切换攻击)}, 关闭按钮: {bool(result.关闭按钮)}, 当前职业: {current_profession}')
+        
         if result.切换攻击:
             if (result.采矿工 and job == '采矿工') or (result.园艺工 and job == '园艺工'):
                 self.logs.info(f'当前职业为{job}，无需切换')
                 return
+            
             self.logs.info(f'开始切换职业为{job}')
             self.auto_stuck_out('移动取消采集')
+            
+            self.logs.debug('点击切换职业按钮')
             self.mouse.click(463,668,0.8)  # 点击切换职业
+            self.time_sleep(0.5)
+            
+            self.logs.debug('点击生产职业选项')
             self.mouse.click(1139,669,0.8)  # 点击生产职业
+            self.time_sleep(0.5)
+            
             if job == '采矿工':
+                self.logs.debug('选择采矿工职业')
                 self.mouse.click(1155,143,1.5)  # 点击采矿工
             elif job == '园艺工':
+                self.logs.debug('选择园艺工职业')
                 self.mouse.click(1155,200,1.5)  # 点击园艺工
+            
+            # 验证职业切换是否成功
+            self.time_sleep(2)
+            verify_result = MultiMatch(self.cap.screencap(), [self.imgs['采矿工'], self.imgs['园艺工']])
+            if (job == '采矿工' and verify_result.采矿工) or (job == '园艺工' and verify_result.园艺工):
+                self.logs.info(f'职业切换成功，当前职业为{job}')
+            else:
+                self.logs.warning(f'职业切换验证失败，预期{job}，实际检测结果: 采矿工={bool(verify_result.采矿工)}, 园艺工={bool(verify_result.园艺工)}')
+                
         elif result.关闭按钮:
-            self.logs.debug(f'点击关闭按钮')
+            self.logs.debug(f'点击关闭按钮，准备重试切换职业')
             self.mouse.click(result.关闭按钮.rect[0], result.关闭按钮.rect[1], 0.8)
+            self.time_sleep(0.5)
             self.switch_job(job)
+        else:
+            self.logs.warning(f'未检测到切换攻击按钮或关闭按钮，无法进行职业切换。界面状态可能异常。')
 
     # 卡顿自动改出
     def auto_stuck_out(self, mode_name):
