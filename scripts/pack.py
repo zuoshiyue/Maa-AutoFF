@@ -9,6 +9,10 @@ sys.stdout.reconfigure(encoding='utf-8')
 # 在GitHub Actions中通过环境变量控制GCC下载行为
 os.environ['NUITKA_DOWNLOAD_GCC'] = 'yes'
 
+# 将Nuitka下载的GCC路径添加到PATH环境变量中
+nuitka_gcc_path = os.path.join(os.environ['LOCALAPPDATA'], 'Nuitka', 'Nuitka', 'Cache', 'downloads', 'gcc', 'x86_64', '13.2.0-16.0.6-11.0.1-msvcrt-r1', 'mingw64', 'bin')
+os.environ['PATH'] = nuitka_gcc_path + ';' + os.environ['PATH']
+
 def main():
     """
     使用 Nuitka 打包项目的主函数。
