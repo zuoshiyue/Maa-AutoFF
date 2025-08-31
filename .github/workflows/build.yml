@@ -50,6 +50,8 @@ jobs:
 
     - name: Build executable with Nuitka
       run: |
+        # 设置环境变量以避免Nuitka尝试下载GCC
+        set NUITKA_DOWNLOAD_GCC=no
         python scripts/pack.py
 
     - name: Upload artifact

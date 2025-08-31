@@ -6,8 +6,8 @@ import shutil
 # 设置标准输出编码为UTF-8，防止Windows环境下打印中文字符时出现编码错误
 sys.stdout.reconfigure(encoding='utf-8')
 
-# 设置环境变量以自动接受Nuitka的GCC下载
-os.environ['NUITKA_DOWNLOAD_GCC'] = 'yes'
+# 在GitHub Actions中通过环境变量控制GCC下载行为
+# os.environ['NUITKA_DOWNLOAD_GCC'] = 'yes'
 
 def main():
     """
