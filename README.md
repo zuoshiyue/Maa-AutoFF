@@ -64,6 +64,7 @@
 - [mtc](https://github.com/NakanoSanku/mtc)
 
 ## 更新日志
+- 2025-09-01: 修复Nuitka打包脚本中的Unicode编码错误，确保在Windows环境下能正确打印中文字符
 - 2025-08-31: 优化采集自动切换职业；修复GitHub Actions工作流，更新到v4版本以解决弃用问题
 - 2025-04-26: 删除print语句，优化代码
 - 2025-04-25: 支持mumu5模拟器
