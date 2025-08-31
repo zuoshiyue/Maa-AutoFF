@@ -45,6 +45,18 @@
 - `npm run build`
 - `python AutoFF.py`
 
+### 自动打包生成exe应用程序
+本项目使用GitHub Actions自动打包生成exe应用程序。每次推送到`main`分支或创建拉取请求时，都会自动触发打包流程。
+
+您也可以手动触发打包流程：
+1. 访问项目的Actions页面
+2. 选择"Build AutoFF Executable"工作流
+3. 点击"Run workflow"按钮
+
+打包生成的exe文件可以通过以下方式获取：
+1. 在Actions页面找到对应的workflow run
+2. 在Artifacts部分下载"AutoFF-executable"
+
 ## 鸣谢
 - [MaaFramework](https://github.com/MaaXYZ/MaaFramework)
 - [rapidocr](https://github.com/RapidAI/RapidOCR)
