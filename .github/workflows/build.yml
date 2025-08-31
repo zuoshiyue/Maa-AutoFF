@@ -42,6 +42,12 @@ jobs:
         cd frontend
         npm run build
 
+    - name: 下载 winlibs GCC
+      run: |
+        curl -L -o gcc.zip https://github.com/brechtsanders/winlibs_mingw/releases/download/13.2.0-16.0.6-11.0.1-msvcrt-r1/winlibs-x86_64-posix-seh-gcc-13.2.0-mingw-w64msvcrt-11.0.1-r1.zip
+        7z x gcc.zip -oC:\winlibs
+        echo "C:\winlibs\mingw64\bin" >> $GITHUB_PATH
+
     - name: Build executable with Nuitka
       run: |
         python scripts/pack.py
