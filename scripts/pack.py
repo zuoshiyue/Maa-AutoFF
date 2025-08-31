@@ -62,7 +62,8 @@ def main():
         
         print("\n" + "="*50)
         print("打包成功！")
-        print(f"输出文件位于: {os.path.abspath(output_dir)}")
+        output_file_path = os.path.join(output_dir, output_exe_name)
+        print(f"输出文件位于: {os.path.abspath(output_file_path)}")
         print("="*50)
 
     except FileNotFoundError:
