@@ -48,11 +48,13 @@ jobs:
         7z x gcc.zip -oC:\winlibs
         echo "C:\winlibs\mingw64\bin" >> $GITHUB_PATH
 
-    - name: Build executable with Nuitka
+    - name: Install PyInstaller
       run: |
-        # 设置环境变量以避免Nuitka尝试下载GCC
-        set NUITKA_DOWNLOAD_GCC=no
-        python scripts/pack.py
+        pip install pyinstaller
+        
+    - name: Build executable with PyInstaller
+      run: |
+        python scripts/pack_pyinstaller.py
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
