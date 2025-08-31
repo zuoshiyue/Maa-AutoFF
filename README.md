@@ -64,6 +64,7 @@
 - [mtc](https://github.com/NakanoSanku/mtc)
 
 ## 更新日志
+- 2025-09-03: 在Nuitka打包脚本中添加exe文件存在性检查，以帮助诊断打包问题
 - 2025-09-02: 修复Nuitka打包脚本中输出文件路径显示不准确的问题
 - 2025-09-01: 修复Nuitka打包脚本中的Unicode编码错误，确保在Windows环境下能正确打印中文字符
 - 2025-08-31: 优化采集自动切换职业；修复GitHub Actions工作流，更新到v4版本以解决弃用问题
