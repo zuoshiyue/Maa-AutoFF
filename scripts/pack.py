@@ -13,6 +13,11 @@ os.environ['NUITKA_DOWNLOAD_GCC'] = 'yes'
 nuitka_gcc_path = os.path.join(os.environ['LOCALAPPDATA'], 'Nuitka', 'Nuitka', 'Cache', 'downloads', 'gcc', 'x86_64', '13.2.0-16.0.6-11.0.1-msvcrt-r1', 'mingw64', 'bin')
 os.environ['PATH'] = nuitka_gcc_path + ';' + os.environ['PATH']
 
+# 在GitHub Actions中设置正确的GCC路径
+if 'GITHUB_ACTIONS' in os.environ:
+    os.environ['CC'] = os.path.join(nuitka_gcc_path, 'gcc.exe')
+    os.environ['CXX'] = os.path.join(nuitka_gcc_path, 'g++.exe')
+
 def main():
     """
     使用 Nuitka 打包项目的主函数。
