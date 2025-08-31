@@ -17,6 +17,7 @@
 - [新手上路](https://kdocs.cn/l/cr7ysRpwQO6s)(**使用前必看**)
 
 ## 开发相关
+### 开发相关
 ### 技术栈
 - 前端技术
   - javaScript
@@ -35,8 +36,6 @@
 - 打包
   - npm
   - Nuitka (v2.4.7)
-  - npm
-  - Nuitka
 
 ### 运行方法
 - `git clone https://github.com/Jai-wei/Maa-AutoFF.git`
@@ -46,7 +45,7 @@
 - `python AutoFF.py`
 
 ### 自动打包生成exe应用程序
-本项目使用GitHub Actions自动打包生成exe应用程序。每次推送到`main`分支或创建拉取请求时，都会自动触发打包流程。
+本项目使用GitHub Actions自动打包生成exe应用程序。当创建一个以 `v` 开头的 tag 时（例如 `v1.0.0`），会自动触发打包流程并创建 GitHub Release。
 
 您也可以手动触发打包流程：
 1. 访问项目的Actions页面
@@ -56,6 +55,7 @@
 打包生成的exe文件可以通过以下方式获取：
 1. 在Actions页面找到对应的workflow run
 2. 在Artifacts部分下载"AutoFF-executable"
+3. 或者在项目的 Releases 页面下载最新版本
 
 ## 鸣谢
 - [MaaFramework](https://github.com/MaaXYZ/MaaFramework)
@@ -64,6 +64,7 @@
 - [mtc](https://github.com/NakanoSanku/mtc)
 
 ## 更新日志
+- 2025-09-04: 将GitHub Actions打包方式从PyInstaller切换为Nuitka，并更新相关文档
 - 2025-09-03: 在Nuitka打包脚本中添加exe文件存在性检查，以帮助诊断打包问题
 - 2025-09-02: 修复Nuitka打包脚本中输出文件路径显示不准确的问题
 - 2025-09-01: 修复Nuitka打包脚本中的Unicode编码错误，确保在Windows环境下能正确打印中文字符

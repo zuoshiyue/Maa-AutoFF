@@ -64,7 +64,7 @@ def main():
         result = subprocess.run(cmd_str, shell=True, check=True, text=True, encoding='utf-8', errors='replace')
         
         # 检查输出目录和exe文件是否存在
-        output_file_path = os.path.join(output_dir, output_exe_name)
+        output_file_path = os.path.join(output_dir, 'AutoFF.dist', output_exe_name)
         if os.path.exists(output_file_path):
             print("\n" + "="*50)
             print("打包成功！")

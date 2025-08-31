@@ -2,9 +2,8 @@ name: Build AutoFF Executable
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -42,23 +41,32 @@ jobs:
         cd frontend
         npm run build
 
-    - name: 下载 winlibs GCC
+    - name: Install Nuitka
       run: |
-        curl -L -o gcc.zip https://github.com/brechtsanders/winlibs_mingw/releases/download/13.2.0-16.0.6-11.0.1-msvcrt-r1/winlibs-x86_64-posix-seh-gcc-13.2.0-mingw-w64msvcrt-11.0.1-r1.zip
-        7z x gcc.zip -oC:\winlibs
-        echo "C:\winlibs\mingw64\bin" >> $GITHUB_PATH
-
-    - name: Install PyInstaller
-      run: |
-        pip install pyinstaller
+        pip install nuitka
         
-    - name: Build executable with PyInstaller
+    - name: Build executable with Nuitka
       run: |
-        python scripts/pack_pyinstaller.py
+        $env:NUITKA_DOWNLOAD_GCC="yes"; python scripts/pack.py
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        name: AutoFF-executable
-        path: out/AutoFF.exe
-        if-no-files-found: error
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      id: upload-release-asset 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: out/AutoFF.dist/AutoFF.exe
+        asset_name: AutoFF.exe
+        asset_content_type: application/octet-stream

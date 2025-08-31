@@ -18,13 +18,34 @@ def main():
     # 确保输出目录存在
     os.makedirs(output_dir, exist_ok=True)
     
+    # --- 动态查找依赖包路径 ---
+    print("正在查找依赖包路径...")
+    try:
+        import webview
+        import rapidocr
+
+        webview_path = os.path.dirname(webview.__file__)
+        rapidocr_path = os.path.dirname(rapidocr.__file__)
+        print(f"找到 webview 路径: {webview_path}")
+        print(f"找到 rapidocr 路径: {rapidocr_path}")
+    except ImportError as e:
+        print(f"导入错误: {e}")
+        print("请确保 'pywebview' 和 'rapidocr' 已经安装在当前 Python 环境中。")
+        sys.exit(1)
+
+    webview_js_path = os.path.join(webview_path, 'js')
+    rapidocr_config_path = os.path.join(rapidocr_path, 'config.yaml')
+    rapidocr_default_models_path = os.path.join(rapidocr_path, 'default_models.yaml')
+    rapidocr_models_path = os.path.join(rapidocr_path, 'models')
+
     # --- 构建打包命令字符串 ---
     cmd_str = (
-        f'pyinstaller --noconfirm --onedir --windowed '
+        f'pyinstaller --noconfirm --onefile --windowed '
         f'--distpath {output_dir} '
         f'--name {output_exe_name[:-4]} '  # PyInstaller uses name without .exe
         f'--add-data "frontend/dist;frontend/dist" '
         f'--add-data "res;res" '
+        f'--add-data "{rapidocr_default_models_path};rapidocr" '
         f'{main_script}'
     )
     

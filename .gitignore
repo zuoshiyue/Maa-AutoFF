@@ -3,3 +3,20 @@
 frontend/dist
 frontend/node_modules
 user
+
+# 打包相关
+out/
+build/
+nuitka-cache/
+*.spec
+
+# 日志文件
+*.log
+
+# IDE相关
+.vscode/
+.idea/
+
+# 系统文件
+.DS_Store
+Thumbs.db
