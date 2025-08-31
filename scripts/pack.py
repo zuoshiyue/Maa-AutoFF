@@ -60,11 +60,19 @@ def main():
         # 直接使用 shell=True 执行完整的命令字符串，就像在命令行中直接输入那样
         result = subprocess.run(cmd_str, shell=True, check=True, text=True, encoding='utf-8', errors='replace')
         
-        print("\n" + "="*50)
-        print("打包成功！")
+        # 检查输出目录和exe文件是否存在
         output_file_path = os.path.join(output_dir, output_exe_name)
-        print(f"输出文件位于: {os.path.abspath(output_file_path)}")
-        print("="*50)
+        if os.path.exists(output_file_path):
+            print("\n" + "="*50)
+            print("打包成功！")
+            print(f"输出文件位于: {os.path.abspath(output_file_path)}")
+            print("="*50)
+        else:
+            print("\n" + "="*50)
+            print("打包失败：未找到生成的exe文件")
+            print(f"期望文件路径: {os.path.abspath(output_file_path)}")
+            print("="*50)
+            sys.exit(1)
 
     except FileNotFoundError:
         print("\n错误: 'nuitka' 命令未找到。")
