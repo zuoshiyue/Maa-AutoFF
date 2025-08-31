@@ -3,6 +3,9 @@ import subprocess
 import sys
 import shutil
 
+# 设置标准输出编码为UTF-8，防止Windows环境下打印中文字符时出现编码错误
+sys.stdout.reconfigure(encoding='utf-8')
+
 def main():
     """
     使用 PyInstaller 打包项目的主函数。
