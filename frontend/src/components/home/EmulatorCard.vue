@@ -189,7 +189,21 @@ const connectEmulator = async (index) => {
 
   try {
     connectingEmulator.value = true
+    console.log('开始连接模拟器，索引:', index)
     const response = await window.pywebview.api.connect_emulator(parseInt(index))
+    
+    console.log('模拟器连接响应:', response)
+    
+    // 检查响应结构
+    if (!response) {
+      console.error('连接模拟器返回空响应')
+      return { status: false, message: '连接模拟器返回空响应' }
+    }
+    
+    if (typeof response !== 'object') {
+      console.error('连接模拟器返回非对象响应:', response)
+      return { status: false, message: `连接模拟器返回非对象响应: ${response}` }
+    }
     
     if (response.status) {
       emulatorConnected.value = true
@@ -459,4 +473,4 @@ onMounted(async () => {
     transform: translateY(0);
   }
 }
-</style> 
+</style>

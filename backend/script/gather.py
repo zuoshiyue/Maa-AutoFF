@@ -79,15 +79,18 @@ class Gather:
 
     # 更新采集列表
     def update_gather_list(self):
+        self.logs.debug(f'开始更新采集列表，当前采集物品: {self.paras["gather_name"]}')
         if self.paras['gather_name'] and self.paras['gather_name'] in G_para.gathering_items and G_para.gathering_items[self.paras['gather_name']]['need'] > G_para.gathering_items[self.paras['gather_name']]['complete']:
-            # self.logs.debug(f'当前采集物品【{self.paras["gather_name"]}】未采集完成，无需更新')
+            self.logs.debug(f'当前采集物品【{self.paras["gather_name"]}】未采集完成，无需更新')
             return
         # 获取新的采集物品
         for key, value in G_para.gathering_items.items():
             if value['need'] > value['complete']:
                 self.paras['gather_name'] = key
                 self.logs.debug(f'更新当前采集物品为【{self.paras["gather_name"]}】')
-                self.switch_job(gather_info[self.paras['gather_name']]['job'])
+                required_job = gather_info[self.paras['gather_name']]['job']
+                self.logs.debug(f'所需职业: {required_job}')
+                self.switch_job(required_job)
                 return
         self.tips.success("采集列表已全部完成")
         self.time_sleep(10)
@@ -98,14 +101,15 @@ class Gather:
         result = MultiMatch(self.cap.screencap(), [self.imgs['采集笔记按钮'], self.imgs['寻路按钮'], self.imgs['取消寻路按钮'], self.imgs['飞行中']])
         # 飞行中先下坐骑
         if result.飞行中:
+            self.logs.debug(f'检测到飞行中状态，执行下坐骑操作')
             self.auto_stuck_out('下坐骑')
 
         # 点击采集按钮并寻路
         elif result.采集笔记按钮:
-            self.logs.debug(f'点击采集笔记按钮')
             self.auto_stuck_out('移动取消采集')
             self.mouse.click(result.采集笔记按钮.rect[0]+10, result.采集笔记按钮.rect[1]+10, 1)
-            if SingleMatch(self.cap.screencap(), self.imgs['采集笔记ui']):
+            screencap = self.cap.screencap()
+            if SingleMatch(screencap, self.imgs['采集笔记ui']):
                 if self.paras['old_gather_name'] != self.paras['gather_name']: # 是否重选
                     self.logs.debug(f'需要重选笔记中的采集物品')
                     self.choose_level(gather_info[self.paras['gather_name']]['level'])
@@ -118,8 +122,8 @@ class Gather:
         
         # 寻路
         elif result.寻路按钮:
-            self.logs.debug(f'点击寻路按钮')
-            if SingleMatch(self.cap.screencap(), self.imgs['切换职业']):    # 可能可以删了？
+            screencap = self.cap.screencap()
+            if SingleMatch(screencap, self.imgs['切换职业']):    # 可能可以删了？
                 self.logs.debug(f'寻路前需要切换职业')
                 self.mouse.click(780,470, 1) # 切换职业
             self.mouse.click(result.寻路按钮.rect[0]+8, result.寻路按钮.rect[1]+8, 3) # 寻路
@@ -182,7 +186,6 @@ class Gather:
 
         # 点击取消寻路按钮
         elif result.取消寻路按钮:
-            self.logs.debug(f'点击取消寻路按钮')
             self.mouse.click(result.取消寻路按钮.rect[0]+8, result.取消寻路按钮.rect[1]+8, 0.5)
             self.mouse.click(10, 30, 0.5)  # 点一下边缘，防止误触寻路
             self.mouse.click(1240, 30, 0.7)  # 点击返回
@@ -200,12 +203,12 @@ class Gather:
     def start_gather(self):
         result = MultiMatch(self.cap.screencap(), [self.imgs['可挖草'], self.imgs['可挖矿']])
         if result.可挖草 or result.可挖矿:
+            self.logs.debug(f'检测到可采集物品，开始采集流程')
             # 计算采集进度
             self.cal_progress()
             # 开始采集
             self.mouse.click(790, 350, 1.5)  # 点击采集
             t_begin = time.time()
-            self.logs.debug(f'开始采集')
             self.paras['last_gather_time'] = time.time()
             self.paras['stuck_out_mode'] = 0 # 重置卡住改出模式
             gather_list = []    # 采集列表中的物品
@@ -218,7 +221,6 @@ class Gather:
                 for key,value in ocr_result.items():
                     if key == self.paras['gather_name']:  # 找到了需要采集的物品
                         gather_poi = (370, int(value[1]+value[3]/2))
-                        self.logs.debug(f'找到需要采集的物品坐标：{key},{gather_poi}')
                         break
                     elif key in gather_info and key not in gather_list:  # 不是需要采集的物品，但是是采集列表中的物品
                         gather_list.append(key)
@@ -343,6 +345,7 @@ class Gather:
     def repair_equipment(self):
         result = MultiMatch(self.cap.screencap(), [self.imgs['角色按钮'], self.imgs['角色ui'], self.imgs['关闭按钮']])
         if result.角色按钮:
+            self.logs.debug(f'检测到角色按钮，点击角色按钮')
             self.mouse.click(result.角色按钮.rect[0], result.角色按钮.rect[1], 1.5)
             self.repair_equipment() # 去检测角色ui界面
 
@@ -361,7 +364,7 @@ class Gather:
             self.paras['repair_time'] = time.time()
 
         elif not result.角色按钮 and not result.角色ui and result.关闭按钮:
-            self.logs.debug(f'点击关闭按钮')
+            self.logs.debug(f'检测到关闭按钮，点击关闭按钮')
             self.mouse.click(result.关闭按钮.rect[0], result.关闭按钮.rect[1], 1)
 
         elif self.paras['need_repair']:
@@ -370,29 +373,68 @@ class Gather:
 
     # 切换职业
     def switch_job(self, job):
+        self.logs.debug(f'开始切换职业，目标职业: {job}')
         result = MultiMatch(self.cap.screencap(), [self.imgs['切换攻击'], self.imgs['关闭按钮'], self.imgs['采矿工'], self.imgs['园艺工']])
-        if result.切换攻击:
-            if (result.采矿工 and job == '采矿工') or (result.园艺工 and job == '园艺工'):
+        self.logs.debug(f'图像匹配结果: 切换攻击={result.切换攻击}, 关闭按钮={result.关闭按钮}, 采矿工={result.采矿工}, 园艺工={result.园艺工}')
+        
+        # 如果目标职业和当前职业不相等，切换到目标职业
+        # 如果job = 园艺工且result.园艺工为空则切换为园艺工，如果job == '采矿工'且result.采矿工为空则切换为采矿工
+        if job == '园艺工' and not result.园艺工:
+            self.logs.debug(f'需要切换到园艺工')
+            self.mouse.click(463,668,0.8)  # 点击切换职业
+            self.mouse.click(1139,669,0.8)  # 点击生产职业
+            self.mouse.click(1155,200,1.5)  # 点击园艺工
+            self.logs.debug(f'点击切换到园艺工')
+            return
+        elif job == '采矿工' and not result.采矿工:
+            self.logs.debug(f'需要切换到采矿工')
+            self.mouse.click(463,668,0.8)  # 点击切换职业
+            self.mouse.click(1139,669,0.8)  # 点击生产职业
+            self.mouse.click(1155,143,1.5)  # 点击采矿工
+            self.logs.debug(f'点击切换到采矿工')
+            return
+        elif (job == '园艺工' and result.园艺工) or (job == '采矿工' and result.采矿工):
+            self.logs.debug(f'当前职业为{job}，无需切换')
+            return
+        elif result.切换攻击:
+            self.logs.debug(f'检测到切换攻击按钮')
+            # 检查当前职业是否与目标职业一致
+            current_job = None
+            if result.采矿工:
+                current_job = '采矿工'
+            elif result.园艺工:
+                current_job = '园艺工'
+            
+            if current_job == job:
                 self.logs.debug(f'当前职业为{job}，无需切换')
-                return
+                return True
+            
             self.logs.debug(f'开始切换职业为{job}')
             self.auto_stuck_out('移动取消采集')
             self.mouse.click(463,668,0.8)  # 点击切换职业
             self.mouse.click(1139,669,0.8)  # 点击生产职业
             if job == '采矿工':
+                self.logs.debug(f'点击采矿工')
                 self.mouse.click(1155,143,1.5)  # 点击采矿工
             elif job == '园艺工':
+                self.logs.debug(f'点击园艺工')
                 self.mouse.click(1155,200,1.5)  # 点击园艺工
+            self.logs.debug(f'职业切换完成')
+            return True
         elif result.关闭按钮:
-            self.logs.debug(f'点击关闭按钮')
+            self.logs.debug(f'检测到关闭按钮，点击关闭按钮')
             self.mouse.click(result.关闭按钮.rect[0], result.关闭按钮.rect[1], 0.8)
-            self.switch_job(job)
+            return self.switch_job(job)
+        else:
+            self.logs.debug(f'未检测到切换攻击按钮或关闭按钮')
+            return False
 
     # 卡顿自动改出
     def auto_stuck_out(self, mode_name):
         # 移动取消采集
         if mode_name == '移动取消采集':
             if CompareColor(self.cap.screencap(), [[447, 48],[450, 48],[455, 48]], 'ffffff-020202'):
+                self.logs.debug(f'检测到收藏品UI，执行滑动和点击操作')
                 self.mouse.swipe([[230,545], [230,370]], 1, 1500)  # 通过移动取消采集
                 self.mouse.click(774, 464, 2)   # 收藏品退出确定
         elif mode_name == '解决卡住':
@@ -421,6 +463,7 @@ class Gather:
             self.mouse.click(774, 464, 0.5)   # 收藏品退出确定
         elif mode_name == '往前飞一段':
             if not SingleMatch(self.cap.screencap(), self.imgs['骑乘中']):
+                self.logs.debug(f'未检测到骑乘中状态，执行上坐骑操作')
                 self.mouse.click(963, 646, 3.5)       # 上坐骑
             self.mouse.click(1200, 510, 0.3, duration=1200)       # 飞起来
             self.mouse.swipe([[230,545], [230,430]], 0.3, 800)  # 固定前进

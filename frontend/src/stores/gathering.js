@@ -41,6 +41,7 @@ export const useGatheringStore = defineStore('gathering', () => {
 
   // 监听采集列表的变化，并通知后端
   watch(gatheringItems, (newItems) => {
+    console.log('采集列表变化:', newItems);
     const formattedItems = {}
     newItems.forEach(item => {
       formattedItems[item.name] = {
@@ -53,9 +54,11 @@ export const useGatheringStore = defineStore('gathering', () => {
     })
 
     if (window.pywebview && window.pywebview.api && window.pywebview.api.update_gathering_items) {
+      console.log('调用update_gathering_items API:', formattedItems);
       window.pywebview.api.update_gathering_items(formattedItems)
         .then(response => {
-          if (!response.success) {
+          console.log('update_gathering_items API响应:', response);
+          if (response && !response.success) {
             console.error("更新采集列表失败:", response.message);
             ElMessage.error(response.message);
           }
@@ -76,4 +79,4 @@ export const useGatheringStore = defineStore('gathering', () => {
     removeItem, 
     updateItems 
   }
-}) 
+})

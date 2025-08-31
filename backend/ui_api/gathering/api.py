@@ -26,11 +26,15 @@ class GatheringApi:
     
     def start_gathering(self):
         """开始采集"""
+        logger.info(f"开始采集检查: 当前时间={time.time()}, Gva.over={Gva.over}")
         if time.time() > Gva.over:
-            return
+            logger.warning("采集时间已过期")
+            return {"success": False, "message": "时间已过期"}
         if Gva.emulator_info['state'] == False:
+            logger.warning("模拟器未连接")
             return {"error": True, "message": "模拟器未连接"}
         if self.is_gathering:
+            logger.warning("采集已在进行中")
             return {"success": False, "message": "采集已在进行中"}
         
         try:
@@ -92,6 +96,7 @@ class GatheringApi:
     def get_gathering_progress(self):
         """获取采集进度数据"""
         try:
+            logger.info(f"获取采集进度数据, Gva.gathering_items: {Gva.gathering_items}")
             # 为每个采集项添加额外信息
             items_with_info = {}
             current_time = time.time()
@@ -124,6 +129,7 @@ class GatheringApi:
                 
                 items_with_info[item_name] = item_info
             
+            logger.info(f"采集进度数据处理完成: {items_with_info}")
             return {"success": True, "items": items_with_info}
         except Exception as e:
             logger.error(f"获取采集进度失败: {e}")
@@ -143,4 +149,4 @@ class GatheringApi:
             return {"success": False, "message": f"更新采集列表失败: {e}"}
 
 # 创建API实例
-# gathering_api = GatheringApi() 
+# gathering_api = GatheringApi()

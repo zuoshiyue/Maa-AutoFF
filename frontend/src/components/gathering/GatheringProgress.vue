@@ -25,31 +25,35 @@ const gatheringTasks = ref([]);
 // 更新采集任务数据
 const updateGatheringTasks = () => {
   if (window.pywebview && window.pywebview.api && window.pywebview.api.get_gathering_progress) {
-    window.pywebview.api.get_gathering_progress().then(response => {
-      if (response && response.items) {
-        // 转换后端数据格式为前端展示格式
-        const tasks = [];
-        for (const [name, data] of Object.entries(response.items)) {
-          const percentage = data.need > 0 ? Math.floor((data.complete / data.need) * 100) : 0;
-          tasks.push({
-            id: name, // 使用名称作为唯一ID
-            name: name,
-            total: data.need,
-            current: data.complete,
-            percentage: percentage,
-            startTime: data.start_time ? data.start_time * 1000 : null, // 转换为毫秒
-            endTime: data.end_time ? data.end_time * 1000 : null, // 转换为毫秒
-            speed: data.num_per_min || 0,
-            job: data.job,
-            level: data.level
-          });
-        }
-        gatheringTasks.value = tasks;
-      }
-    }).catch(error => {
-      console.error('获取采集进度失败:', error);
-    });
-  } else {
+        console.log('调用get_gathering_progress API');
+        window.pywebview.api.get_gathering_progress().then(response => {
+          console.log('get_gathering_progress API响应:', response);
+          if (response && response.items) {
+            // 转换后端数据格式为前端展示格式
+            const tasks = [];
+            for (const [name, data] of Object.entries(response.items)) {
+              const percentage = data.need > 0 ? Math.floor((data.complete / data.need) * 100) : 0;
+              tasks.push({
+                id: name, // 使用名称作为唯一ID
+                name: name,
+                total: data.need,
+                current: data.complete,
+                percentage: percentage,
+                startTime: data.start_time ? data.start_time * 1000 : null, // 转换为毫秒
+                endTime: data.end_time ? data.end_time * 1000 : null, // 转换为毫秒
+                speed: data.num_per_min || 0,
+                job: data.job,
+                level: data.level
+              });
+            }
+            gatheringTasks.value = tasks;
+          } else {
+            console.error('获取采集进度失败:', response?.message || '未知错误');
+          }
+        }).catch(error => {
+          console.error('获取采集进度出错:', error);
+        });
+      } else {
     // 在开发环境中使用store中的数据生成模拟进度
     const tasks = [];
     gatheringStore.gatheringItems.forEach((item, index) => {
@@ -81,7 +85,9 @@ const initGatheringStatus = async () => {
   try {
     if (window.pywebview && window.pywebview.api && window.pywebview.api.get_gathering_status) {
       const status = await window.pywebview.api.get_gathering_status();
-      isGathering.value = status.is_gathering;
+      if (status && status.is_gathering !== undefined) {
+        isGathering.value = status.is_gathering;
+      }
     }
   } catch (error) {
     console.error('获取采集状态失败:', error);
@@ -114,12 +120,12 @@ const toggleGathering = async () => {
   try {
     if (window.pywebview && window.pywebview.api && window.pywebview.api.toggle_gathering) {
       const result = await window.pywebview.api.toggle_gathering();
-      if (result.success) {
+      if (result && result.success) {
         isGathering.value = result.is_gathering;
       } else {
         // 如果失败，显示错误消息
-        console.error('切换采集状态失败:', result.message);
-        ElMessage.error(result.message);
+        console.error('切换采集状态失败:', result?.message || '未知错误');
+        ElMessage.error(result?.message || '切换采集状态失败');
       }
     }
   } catch (error) {
@@ -654,4 +660,4 @@ const getRemainingTime = (task) => {
     box-shadow: 0 0 0 0 rgba(64, 158, 255, 0);
   }
 }
-</style> 
+</style>

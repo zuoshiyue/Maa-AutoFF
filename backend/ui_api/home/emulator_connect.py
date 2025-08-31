@@ -72,9 +72,14 @@ class EmulatorConnect:
         :return: 连接结果
         """
         try:
-            if time.time() > paras.over:
-                return
+            self.logger.info(f"开始连接模拟器，索引: {index}")
+            
+            # if time.time() > paras.over:
+            #     self.logger.warning("授权已过期")
+            #     return
+                
             # 查找指定索引的模拟器
+            self.logger.info(f"当前模拟器列表: {self.emulators_list}")
             target_emulator = None
             for emulator in self.emulators_list:
                 if emulator['编号'] == index:
@@ -85,16 +90,22 @@ class EmulatorConnect:
                 self.logger.warning(f"未找到索引为{index}的模拟器")
                 return {
                     'status': False,
-                    'message': f'未找到索引为{index}的模拟器'
+                    'message': f'未找到索引为{index}的模拟器',
+                    'emulatorInfo': paras.emulator_info
                 }
+            
+            self.logger.info(f"找到目标模拟器: {target_emulator}")
             
             # 检查模拟器状态
             if target_emulator['状态'] != 'M-开启':
                 self.logger.warning(f"模拟器 {target_emulator['名称']} 未启动")
                 return {
                     'status': False,
-                    'message': f'模拟器 {target_emulator["名称"]} 未启动，请先启动模拟器'
+                    'message': f'模拟器 {target_emulator["名称"]} 未启动，请先启动模拟器',
+                    'emulatorInfo': paras.emulator_info
                 }
+            
+            self.logger.info("模拟器状态检查通过")
             
             # 更新全局变量中的模拟器信息
             paras.emulator_info['name'] = target_emulator['名称']
@@ -102,7 +113,10 @@ class EmulatorConnect:
             paras.emulator_info['adb_port'] = target_emulator['ADB']
             paras.emulator_info['state'] = True
             
+            self.logger.info(f"更新全局变量中的模拟器信息: {paras.emulator_info}")
+            
             # 加载模拟器api
+            self.logger.info("开始加载模拟器API")
             paras.emulator_api['cap'] = MuMuCap(target_emulator['编号'], paras.sys_settings['mumuPath'])
             paras.emulator_api['cap'].set_fps(paras.sys_settings['screenshot_fps'])
             paras.emulator_api['mouse'] = MouseController(
@@ -112,8 +126,20 @@ class EmulatorConnect:
                 
             )
             paras.emulator_api['keyboard'] = Keyboard(win32gui.FindWindow(None, paras.emulator_info['name']))
-            paras.emulator_api['ocr'] = Ocr()
             
+            # 初始化OCR模块，添加异常处理
+            try:
+                paras.emulator_api['ocr'] = Ocr()
+                self.logger.info("OCR模块初始化成功")
+            except Exception as ocr_error:
+                self.logger.error(f"OCR模块初始化失败: {str(ocr_error)}", exc_info=True)
+                return {
+                    'status': False,
+                    'message': f'OCR模块初始化失败: {str(ocr_error)}',
+                    'emulatorInfo': paras.emulator_info
+                }
+            
+            self.logger.info("模拟器API加载完成")
             
             self.logger.info(f"成功连接到模拟器: {target_emulator['名称']}")
             return {
@@ -123,8 +149,9 @@ class EmulatorConnect:
             }
         
         except Exception as e:
-            self.logger.error(f"连接模拟器时发生错误: {str(e)}")
+            self.logger.error(f"连接模拟器时发生错误: {str(e)}", exc_info=True)
             return {
                 'status': False,
-                'message': f'连接模拟器失败: {str(e)}'
-            } 
+                'message': f'连接模拟器失败: {str(e)}',
+                'emulatorInfo': paras.emulator_info
+            }
