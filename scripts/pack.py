@@ -6,6 +6,9 @@ import shutil
 # 设置标准输出编码为UTF-8，防止Windows环境下打印中文字符时出现编码错误
 sys.stdout.reconfigure(encoding='utf-8')
 
+# 设置环境变量以避免Nuitka的GCC下载提示
+os.environ['NUITKA_DOWNLOAD_GCC'] = 'no'
+
 def main():
     """
     使用 Nuitka 打包项目的主函数。
@@ -77,13 +80,16 @@ def main():
     except FileNotFoundError:
         print("\n错误: 'nuitka' 命令未找到。")
         print("请确保 Nuitka 已经通过 'pip install nuitka' 安装，并且 Python 的 Scripts 目录已添加到系统的 PATH 环境变量中。")
+        sys.exit(1)
     except subprocess.CalledProcessError as e:
         print("\n" + "="*50)
         print(f"打包失败，退出代码: {e.returncode}")
         print("请检查上面的日志输出以获取详细错误信息。")
         print("="*50)
+        sys.exit(1)
     except Exception as e:
         print(f"\n执行打包命令时发生未知错误: {e}")
+        sys.exit(1)
 
 if __name__ == '__main__':
     main()
