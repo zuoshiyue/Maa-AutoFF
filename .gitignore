@@ -12,6 +12,7 @@ nuitka-cache/
 
 # 日志文件
 *.log
+log/
 
 # IDE相关
 .vscode/

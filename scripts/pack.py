@@ -7,7 +7,7 @@ import shutil
 sys.stdout.reconfigure(encoding='utf-8')
 
 # 在GitHub Actions中通过环境变量控制GCC下载行为
-# os.environ['NUITKA_DOWNLOAD_GCC'] = 'yes'
+os.environ['NUITKA_DOWNLOAD_GCC'] = 'yes'
 
 def main():
     """
