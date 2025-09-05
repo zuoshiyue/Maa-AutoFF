@@ -65,7 +65,7 @@ jobs:
       id: nuitka_build
       env:
         NUITKA_DOWNLOAD_GCC: "yes"
-        NUITKA_CACHE_DIR: "${{ github.workspace }}\.nuitka_cache"
+        NUITKA_CACHE_DIR: "${{ github.workspace }}\\.nuitka_cache"
       run: |
         # 显示环境变量以帮助调试
         Write-Output "当前环境变量:"
