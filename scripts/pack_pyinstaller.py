@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 import shutil
+import os
 
 # 设置标准输出编码为UTF-8，防止Windows环境下打印中文字符时出现编码错误
 sys.stdout.reconfigure(encoding='utf-8')
@@ -38,16 +39,48 @@ def main():
     rapidocr_default_models_path = os.path.join(rapidocr_path, 'default_models.yaml')
     rapidocr_models_path = os.path.join(rapidocr_path, 'models')
 
-    # --- 构建打包命令字符串 ---
+    # 确保前端构建已完成
+    frontend_dist_path = os.path.join('frontend', 'dist')
+    if not os.path.exists(frontend_dist_path):
+        print(f"错误: 前端构建目录 {frontend_dist_path} 不存在，请先运行 'npm run build' 构建前端。")
+        sys.exit(1)
+    
+    # 确保资源目录存在
+    res_path = 'res'
+    if not os.path.exists(res_path):
+        print(f"警告: 资源目录 {res_path} 不存在，将创建空目录。")
+        os.makedirs(res_path)
+        # 创建bin子目录
+        if not os.path.exists(os.path.join(res_path, 'bin')):
+            os.makedirs(os.path.join(res_path, 'bin'))
+    
+    # --- 构建打包命令字符串 ---    
+    # 基础PyInstaller命令
     cmd_str = (
-        f'pyinstaller --noconfirm --onefile --windowed '
-        f'--distpath {output_dir} '
+        f'pyinstaller --noconfirm --onefile --windowed '  # 使用--windowed以隐藏控制台
+        f'--distpath {output_dir} ' 
         f'--name {output_exe_name[:-4]} '  # PyInstaller uses name without .exe
-        f'--add-data "frontend/dist;frontend/dist" '
-        f'--add-data "res;res" '
-        f'--add-data "{rapidocr_default_models_path};rapidocr" '
-        f'{main_script}'
     )
+    
+    # 添加数据文件
+    cmd_str += (
+        f'--add-data "{frontend_dist_path};frontend/dist" ' 
+        f'--add-data "{res_path};res" ' 
+        f'--add-data "{webview_js_path};webview/js" ' 
+        f'--add-data "{rapidocr_models_path};rapidocr/models" ' 
+        f'--add-data "{rapidocr_config_path};rapidocr" ' 
+        f'--add-data "{rapidocr_default_models_path};rapidocr" ' 
+    )
+    
+    # 检查图标文件是否存在，如果存在则添加
+    icon_path = os.path.join('res', 'icon.ico')
+    if os.path.exists(icon_path):
+        cmd_str += f'--icon "{icon_path}" '
+    else:
+        print(f"警告: 图标文件 {icon_path} 不存在，将使用默认图标。")
+    
+    # 添加主脚本
+    cmd_str += f'{main_script}'
     
     print("="*50)
     print("准备执行以下 PyInstaller 打包命令:")
@@ -65,11 +98,21 @@ def main():
             print("\n" + "="*50)
             print("打包成功！")
             print(f"输出文件位于: {os.path.abspath(output_file_path)}")
+            
+            # 显示文件大小信息
+            file_size = os.path.getsize(output_file_path) / (1024 * 1024)  # MB
+            print(f"打包文件大小: {file_size:.2f} MB")
             print("="*50)
         else:
             print("\n" + "="*50)
             print("打包失败：未找到生成的exe文件")
             print(f"期望文件路径: {os.path.abspath(output_file_path)}")
+            # 列出dist目录内容以帮助调试
+            if os.path.exists(output_dir):
+                print(f"\n{output_dir}目录内容:")
+                for root, dirs, files in os.walk(output_dir):
+                    for file in files:
+                        print(os.path.join(root, file))
             print("="*50)
             sys.exit(1)
             

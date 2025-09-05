@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 import shutil
+import os
 
 # 设置标准输出编码为UTF-8，防止Windows环境下打印中文字符时出现编码错误
 sys.stdout.reconfigure(encoding='utf-8')
@@ -10,13 +11,29 @@ sys.stdout.reconfigure(encoding='utf-8')
 if 'GITHUB_ACTIONS' in os.environ:
     os.environ['NUITKA_DOWNLOAD_GCC'] = 'yes'
     
-    # 将Nuitka下载的GCC路径添加到PATH环境变量中
-    nuitka_gcc_path = os.path.join(os.environ['LOCALAPPDATA'], 'Nuitka', 'Nuitka', 'Cache', 'downloads', 'gcc', 'x86_64', '13.2.0-16.0.6-11.0.1-msvcrt-r1', 'mingw64', 'bin')
-    os.environ['PATH'] = nuitka_gcc_path + ';' + os.environ['PATH']
-    
-    # 在GitHub Actions中设置正确的GCC路径
-    os.environ['CC'] = os.path.join(nuitka_gcc_path, 'gcc.exe')
-    os.environ['CXX'] = os.path.join(nuitka_gcc_path, 'g++.exe')
+    # 改进的GCC路径查找逻辑，避免硬编码版本号
+    try:
+        # 尝试动态查找GCC路径
+        import glob
+        cache_dir = os.path.join(os.environ['LOCALAPPDATA'], 'Nuitka', 'Nuitka', 'Cache', 'downloads', 'gcc', 'x86_64')
+        if os.path.exists(cache_dir):
+            gcc_versions = glob.glob(os.path.join(cache_dir, '*'))
+            if gcc_versions:
+                # 使用最新版本的GCC
+                gcc_version = max(gcc_versions)
+                nuitka_gcc_path = os.path.join(gcc_version, 'mingw64', 'bin')
+                if os.path.exists(nuitka_gcc_path):
+                    os.environ['PATH'] = nuitka_gcc_path + ';' + os.environ['PATH']
+                    os.environ['CC'] = os.path.join(nuitka_gcc_path, 'gcc.exe')
+                    os.environ['CXX'] = os.path.join(nuitka_gcc_path, 'g++.exe')
+                    print(f"已设置GCC路径: {nuitka_gcc_path}")
+    except Exception as e:
+        print(f"动态设置GCC路径时出错: {e}")
+        # 保留备用的硬编码路径作为回退
+        nuitka_gcc_path = os.path.join(os.environ['LOCALAPPDATA'], 'Nuitka', 'Nuitka', 'Cache', 'downloads', 'gcc', 'x86_64', '13.2.0-16.0.6-11.0.1-msvcrt-r1', 'mingw64', 'bin')
+        os.environ['PATH'] = nuitka_gcc_path + ';' + os.environ['PATH']
+        os.environ['CC'] = os.path.join(nuitka_gcc_path, 'gcc.exe')
+        os.environ['CXX'] = os.path.join(nuitka_gcc_path, 'g++.exe')
 
 def main():
     """
@@ -77,9 +94,17 @@ def main():
         f'--enable-plugin=multiprocessing '  # 添加多进程支持
         f'--follow-imports '  # 自动跟踪导入
         f'--nofollow-import-to=numpy,onnxruntime,opencv_python '  # 这些包通常有自己的二进制文件处理方式
-        f'--windows-icon-from-ico=res/icon.ico '  # 指定程序图标（如果有）
-        f'{main_script}'
     )
+    
+    # 检查图标文件是否存在，如果存在则添加
+    icon_path = os.path.join('res', 'icon.ico')
+    if os.path.exists(icon_path):
+        cmd_str += f' --windows-icon-from-ico={icon_path} '
+    else:
+        print(f"警告: 图标文件 {icon_path} 不存在，将使用默认图标。")
+    
+    # 添加主脚本
+    cmd_str += f' {main_script}'
     
     print("\n" + "="*50)
     print("准备执行以下 Nuitka 打包命令:")
