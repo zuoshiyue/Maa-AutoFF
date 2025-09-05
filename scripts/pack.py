@@ -7,14 +7,14 @@ import shutil
 sys.stdout.reconfigure(encoding='utf-8')
 
 # 在GitHub Actions中通过环境变量控制GCC下载行为
-os.environ['NUITKA_DOWNLOAD_GCC'] = 'yes'
-
-# 将Nuitka下载的GCC路径添加到PATH环境变量中
-nuitka_gcc_path = os.path.join(os.environ['LOCALAPPDATA'], 'Nuitka', 'Nuitka', 'Cache', 'downloads', 'gcc', 'x86_64', '13.2.0-16.0.6-11.0.1-msvcrt-r1', 'mingw64', 'bin')
-os.environ['PATH'] = nuitka_gcc_path + ';' + os.environ['PATH']
-
-# 在GitHub Actions中设置正确的GCC路径
 if 'GITHUB_ACTIONS' in os.environ:
+    os.environ['NUITKA_DOWNLOAD_GCC'] = 'yes'
+    
+    # 将Nuitka下载的GCC路径添加到PATH环境变量中
+    nuitka_gcc_path = os.path.join(os.environ['LOCALAPPDATA'], 'Nuitka', 'Nuitka', 'Cache', 'downloads', 'gcc', 'x86_64', '13.2.0-16.0.6-11.0.1-msvcrt-r1', 'mingw64', 'bin')
+    os.environ['PATH'] = nuitka_gcc_path + ';' + os.environ['PATH']
+    
+    # 在GitHub Actions中设置正确的GCC路径
     os.environ['CC'] = os.path.join(nuitka_gcc_path, 'gcc.exe')
     os.environ['CXX'] = os.path.join(nuitka_gcc_path, 'g++.exe')
 
@@ -22,17 +22,21 @@ def main():
     """
     使用 Nuitka 打包项目的主函数。
     """
-    # --- 配置 ---
+    # --- 配置 ---    
     main_script = 'AutoFF.py'
     output_dir = 'out'
     output_exe_name = 'AutoFF.exe'
-
-    # --- 动态查找依赖包路径 ---
+    
+    # 确保输出目录存在
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    
+    # --- 动态查找依赖包路径 ---    
     print("正在查找依赖包路径...")
     try:
         import webview
         import rapidocr
-
+        
         webview_path = os.path.dirname(webview.__file__)
         rapidocr_path = os.path.dirname(rapidocr.__file__)
         print(f"找到 webview 路径: {webview_path}")
@@ -41,24 +45,39 @@ def main():
         print(f"导入错误: {e}")
         print("请确保 'pywebview' 和 'rapidocr' 已经安装在当前 Python 环境中。")
         sys.exit(1)
-
+    
     webview_js_path = os.path.join(webview_path, 'js')
     rapidocr_config_path = os.path.join(rapidocr_path, 'config.yaml')
     rapidocr_default_models_path = os.path.join(rapidocr_path, 'default_models.yaml')
     rapidocr_models_path = os.path.join(rapidocr_path, 'models')
     
-    # --- 构建打包命令字符串 (使用与成功命令行相同的格式) ---
+    # 确保前端构建已完成
+    frontend_dist_path = os.path.join('frontend', 'dist')
+    if not os.path.exists(frontend_dist_path):
+        print(f"错误: 前端构建目录 {frontend_dist_path} 不存在，请先运行 'npm run build' 构建前端。")
+        sys.exit(1)
+    
+    # 确保资源目录存在
+    res_path = 'res'
+    if not os.path.exists(res_path):
+        print(f"警告: 资源目录 {res_path} 不存在，将创建空目录。")
+        os.makedirs(res_path)
+    
+    # --- 构建打包命令字符串 ---    
     cmd_str = (
-        # f'nuitka --mingw64 --standalone --show-progress '
-        f'nuitka --mingw64 --standalone --show-progress --windows-disable-console '
-        f'--output-dir={output_dir} '
-        f'--output-filename={output_exe_name} '
-        f'--include-data-dir=frontend/dist=frontend/dist '
-        f'--include-data-dir=res=res '
-        f'--include-data-dir={webview_js_path}=webview/js '
-        f'--include-data-dir={rapidocr_models_path}=rapidocr/models '
-        f'--include-data-file={rapidocr_config_path}=rapidocr/config.yaml '
-        f'--include-data-file={rapidocr_default_models_path}=rapidocr/default_models.yaml '
+        f'nuitka --mingw64 --standalone --show-progress '  # 移除 --windows-disable-console 以方便调试
+        f'--output-dir={output_dir} ' 
+        f'--output-filename={output_exe_name} ' 
+        f'--include-data-dir={frontend_dist_path}=frontend/dist ' 
+        f'--include-data-dir={res_path}=res ' 
+        f'--include-data-dir={webview_js_path}=webview/js ' 
+        f'--include-data-dir={rapidocr_models_path}=rapidocr/models ' 
+        f'--include-data-file={rapidocr_config_path}=rapidocr/config.yaml ' 
+        f'--include-data-file={rapidocr_default_models_path}=rapidocr/default_models.yaml ' 
+        f'--enable-plugin=multiprocessing '  # 添加多进程支持
+        f'--follow-imports '  # 自动跟踪导入
+        f'--nofollow-import-to=numpy,onnxruntime,opencv_python '  # 这些包通常有自己的二进制文件处理方式
+        f'--windows-icon-from-ico=res/icon.ico '  # 指定程序图标（如果有）
         f'{main_script}'
     )
     
@@ -66,18 +85,26 @@ def main():
     print("准备执行以下 Nuitka 打包命令:")
     print(cmd_str)
     print("="*50 + "\n")
-
-    # --- 执行打包命令 ---
+    
+    # --- 执行打包命令 ---    
     try:
-        # 直接使用 shell=True 执行完整的命令字符串，就像在命令行中直接输入那样
+        # 直接使用 shell=True 执行完整的命令字符串
         result = subprocess.run(cmd_str, shell=True, check=True, text=True, encoding='utf-8', errors='replace')
         
         # 检查输出目录和exe文件是否存在
-        output_file_path = os.path.join(output_dir, 'AutoFF.dist', output_exe_name)
+        output_dist_dir = os.path.join(output_dir, 'AutoFF.dist')
+        output_file_path = os.path.join(output_dist_dir, output_exe_name)
+        
         if os.path.exists(output_file_path):
             print("\n" + "="*50)
             print("打包成功！")
             print(f"输出文件位于: {os.path.abspath(output_file_path)}")
+            
+            # 验证打包内容
+            print("\n打包内容验证:")
+            print(f"- 前端文件: {'存在' if os.path.exists(os.path.join(output_dist_dir, 'frontend', 'dist', 'index.html')) else '缺失'}")
+            print(f"- Webview JS: {'存在' if os.path.exists(os.path.join(output_dist_dir, 'webview', 'js')) else '缺失'}")
+            print(f"- RapidOCR 模型: {'存在' if os.path.exists(os.path.join(output_dist_dir, 'rapidocr', 'models')) else '缺失'}")
             print("="*50)
         else:
             print("\n" + "="*50)
@@ -85,7 +112,7 @@ def main():
             print(f"期望文件路径: {os.path.abspath(output_file_path)}")
             print("="*50)
             sys.exit(1)
-
+    
     except FileNotFoundError:
         print("\n错误: 'nuitka' 命令未找到。")
         print("请确保 Nuitka 已经通过 'pip install nuitka' 安装，并且 Python 的 Scripts 目录已添加到系统的 PATH 环境变量中。")
