@@ -3,7 +3,7 @@
 
 # AutoFF
 
-《最终幻想14：水晶世界》小助手
+《最终幻想14：水晶世界》小助手(原作者退坑,本人也退坑,不再迭代)
 由 [MaaFramework](https://github.com/MaaXYZ/MaaFramework) 强力驱动！  
 
 </div>
